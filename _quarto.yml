@@ -1,0 +1,10 @@
+project:
+  type: website
+  output-dir: _site
+  resources:
+    - Logos/
+    - styles.css
+
+website:
+  title: "South Okanagan Bat Hibernacula Project"
+  site-url: https://biodiversitypathways.github.io/Okanagan-WinterMonitoring/

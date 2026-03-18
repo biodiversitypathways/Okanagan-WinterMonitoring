@@ -1,8 +1,6 @@
 ---
 title: South Okanagan Bat Hibernacula Project 2019-2025
 subtitle: 2025-26 Update
-resources:
-  - Logos/
 format:
   html:
     grid:

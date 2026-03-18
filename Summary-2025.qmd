@@ -15,6 +15,7 @@ format:
     toc-expand: true
     toc-location: left
     css: styles.css
+    embed-resources: true
   pdf:
     tbl-pos: "H"
     toc: true
@@ -412,10 +413,10 @@ In total there have been `r nrow(OK)` bat recordings recorded over the length of
 #| warning: false
 #| message: false
 #| include: true
-#| fig-cap: Proportion of species bat passes at each site. Other represents tags that were identified as species couplets or species groups
+#| fig-cap: Proportion of species bat passes at each site.
 #| label: fig-monitoring-locations
 
-if (knitr::is_html_output()) {
+if (knitr::pandoc_to("html")){
   m_ok
 }else {
   dir.create(file.path(getwd(), "Figures"), showWarnings = FALSE)

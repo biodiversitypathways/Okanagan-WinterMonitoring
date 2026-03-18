@@ -1,5 +1,6 @@
 ---
-title: "Okanagan Winter Bat Monitoring Summary 2018-2024"
+title: South Okanagan Bat Hibernacula Project
+subtitle: 2025-26 Update
 resources:
   - Logos/
 format:
@@ -302,9 +303,41 @@ m_ok <- m_ok %>% addControl(legend_html, position = "bottomright")
 
 Biodiversity Pathways respectfully acknowledges that our work takes place on Treaty 8 and Douglas Treaties Territories as well as the traditional and unceded territories of First Nations and Métis Peoples across all regions of British Columbia, whose histories, languages, and cultures are deeply connected to the biodiversity we monitor. We acknowledge the traditional teachings of the lands that we work on, and that reciprocal, meaningful, and respectful relationships with Indigenous peoples make our work possible. We are deeply grateful for their stewardship of these lands, and we are committed to supporting Indigenous-led monitoring programs, while learning Indigenous ways of knowing, being, and doing.
 
-# Introduction
+# Background
+
+There is growing evidence that the majority of BC bat species overwinter in the province, and several are occasionally active in winter across British Columbia. Winter acoustic activity has been documented across the province in cave and non-cave habitats (BC BatCaver Program, Lausen 2020), at cliff roosts suspected to be hibernacula in the Peace region (WLRS unpublished data), in coastal forests (WLRS unpublished data), and at five parks in southern BC (BC parks unpublished data). There are likely many year-round acoustic monitoring efforts not mentioned here.
+
+While activity has been recorded at diverse habitats such as cliffs, old forests, and waterbodies, little is known about non-cave microsites used by western bats in these habitats in winter (Nagorsen et al. 1993; Weller et al. 2018). Documented non-cave roosts include talus/tree roosts in southeast Alaska (Blejwas et al. 2021), tree cavities in southeastern BC (de Frietas MSc 2023), a potential talus slope in SE BC (Lausen and Hill 2021) and anthropogenic sites including under siding and trim of houses in coastal BC (BC Community Bat Program unpublished data).
+
+Apart from several large hibernacula known from mines in southern BC, the lack of known hibernacula suggests that the majority of southern BC’s bats are believed to hibernate singly or in small groups scattered across the landscape. This would be similar to findings from the western US, where *Myotis* bats in winter are found singly (45 % of winter records) or in small groups, with a median group size of 2 bats, while Townsend’s Big-eared bats were in slightly larger groups with median 3 (Weller et al. 2018).
+
+In the Okanagan region, multi-year acoustic monitoring by BC Parks (Paterson 2025) has identified the presence of ten species in late fall/early winter and intermittently throughout the winter period, suggesting hibernation in the vicinity of acoustic monitoring stations. The habitats that have been monitored are all rocky outcrops and canyons. While acoustics have confirmed bat presence in these areas, confirming winter roosting/hibernation in these features and identifying the microsites used in these landscapes will increase understanding of hibernation ecology.
+
+Understanding the winter habitat use and ecology of bats can contribute to management decisions around recreational and industrial activities. Understanding how bats use non-cave features, including rock crevices, talus, and trees, for hibernating will also contribute to our understanding of ‎*Pseudogymnoascus destructans* (fungus causing white-nose syndrome in bats) transmission in BC and influence treatment options.
+
+Work occurred in the South Okanagan in 2024/25 (Skurihina and Kellner 2025 to assess the feasibility of fall/winter bat capture and tracking in south Okanagan parks and protected areas and, if successful, to identify microsites used by tagged bats through radiotelemetry. Specifically, this pilot project aimed to
+
+1.   Assess the ability to capture bats in late fall/early winter in the south Okanagan, particularly Skaha Park and Haynes Lease Ecological Reserve,
+
+2.  begin to identify microsites used by bats in late fall/winter, and
+
+3.  test the assumption made in acoustic monitoring that late fall/early winter detections are indicative of bats hibernating in the vicinity – relocation via telemetry would confirm the use of the immediate area.
+
+Efforts originally focused on Doctor’s Wall as a capture site to identify local hibernacula microhabitats. This site is the location of multi-year acoustic monitoring with confirmed winter bat activity, which has been interpreted as indicative of hibernacula in the immediate area. However, our field surveys suggested that bats might be flying rapidly through the area, using the site as a flight corridor. Calls recorded on the multi-year detector may, therefore, not be as indicative of immediate, local hibernation as was first believed. Because of these results in 2024/25, the team decided to consider an alternative approach to indeitfying netting sites.
+
+In 2025/26, we planned to deploy additional bat detectors throughout Skaha Bluff Park to gather additional information on bat movement.
+
+We also invested in data capture and sharing, with submission of all acoustic data from long-term monitoring sites to the North American Bat Monitoring Program database and to WildTrax. This will allow….. contribution to additional larger scale analyses, and storage and re-analysis of acoustic files in future if needed
+
+Finally, we invested in developing a data visualization tool that future results can be added into. While initially simple, this tool should be easy to enhance to make it a useful interactive tool to examine patterns in winter bat detections in Okanagan Parks and Protected Areas.
 
 # Methodology
+
+## Acoustic Monitoring
+
+Passive acoustic monitoring was conducted using Wildlife Acoustic Song Meter MiniBat units, placed out for one to multiple nights, to confirm bat presence and aid in selecting suitable netting microsites. Occasional active monitoring was done during mist-netting, using a handheld Wildlife Acoustic Echometer Touch Pro to monitor bat activity at each capture site. Monitoring effort was not recorded for active monitoring.  
+
+Acoustic results were analyzed using Kaleidoscope Pro (Wildlife Acoustics, version 5.6.8) with bat auto ID Bats of North America 5.8.1 modified for the region. The species list included Pallid Bats (*Antrozous pallidus*, ANPA), Townsend’s Big-eared Bat (*Corynorhinus townsendii*, COTO), Big Brown Bat (*Eptesicus fuscus*, EPFU), Hoary Bat (*Lasiurus cinereus*, LACI), Silver-haired Bat (*Lasionycteris noctivagans*, LANO), Californian Myotis (*Myotis californicus*, MYCA), Western small-footed Myotis (*M. ciliolabrum*, MYCI), Long-eared Myotis (*M. evotis*, MYEV), Little Brown Myotis (*M. lucifugus*, MYLU), Fringed Myotis (*M. thysanodes*, MYTH), Long-legged Myotis (*M. volans*, MYVO), and Yuma Myotis (*M. yumanensis*, MYYU). All files were manually reviewed by Mandy Kellner and Brian Paterson.
 
 # Results
 

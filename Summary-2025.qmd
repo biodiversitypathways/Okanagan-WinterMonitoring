@@ -1,0 +1,343 @@
+---
+title: "Okanagan Winter Bat Monitoring Summary 2018-2024"
+resources:
+  - Logos/
+format:
+  html:
+    grid:
+      margin-width: 300px
+    title-block-banner: "#1d4566"
+    title-block-banner-color: "#F4F4F5"
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    toc-expand: true
+    toc-location: left
+    css: styles.css
+  pdf:
+    tbl-pos: "H"
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    colorlinks: true
+    geometry:
+      - margin=1in
+    papersize: letter
+    extra_dependencies: ["float"]
+    title-graphic: "Images/photos-20250609-193136.jpg"
+    include-before-body:
+      text: |
+        \clearpage
+    include-in-header:
+      text: |
+        \usepackage{placeins}
+        \usepackage{float}
+date: last-modified
+author: 
+  - name: "Camila Hurtado"
+    affiliation: "Biodiversity Pathways"
+  - name: "Mandy Kellner"
+    affiliation: "Ministry of Water, Land and Resource Stewardship, British Columbia "
+editor: visual
+bibliography: NABat-NNWHub-references.bib
+nocite: '@*'
+---
+
+```{r}
+#| label: Load packages and data
+#| include: false
+#| echo: false
+#| eval: true
+#| warning: false
+#| message: false
+ 
+library(tidyr)
+library(dplyr)
+library(lubridate)
+library(stringr)
+library(kableExtra)
+library(tidyverse)
+library(leaflet)
+library(base64enc)
+library(mapview)
+library(sf)
+
+OK <- read.csv("Data/merged.locations.csv")
+
+```
+
+```{r}
+#| label: Prep data for map
+#| include: false
+#| echo: false
+#| eval: true
+#| warning: false
+#| message: false
+
+# ── 1. Summarise species per site ─────────────────────────────────────────────
+exclude_ids <- c("Noise", "NoID", "NOISE", "NOID", "")
+
+species_by_site_year <- OK %>%
+  filter(!Species.Code %in% exclude_ids,
+         !is.na(Species.Code)) %>%
+  mutate(
+    year = format(as.Date(Detection.Date), "%Y"),
+    # For pie charts only: collapse couplets and group codes into Other
+    species_pie = case_when(
+      nchar(Species.Code) == 8                               ~ "Other",
+      toupper(Species.Code) %in% c("HILO", "HIF", "LOF")    ~ "Other",
+      !is.na(Bat.Species.Group.Code) &
+        Bat.Species.Group.Code != ""                         ~ "Other",
+      .default = Species.Code
+    ),
+    # For tables: keep everything as-is
+    species_table = Species.Code
+  ) %>%
+  group_by(Sample.Station.Label, Longitude..DD., Latitude..DD., year, species_pie, species_table) %>%
+  summarise(n = n(), .groups = "drop")
+
+# ── 2. Build site coords ───────────────────────────────────────────────────────
+map_data <- species_by_site_year %>%
+  rename(site_name = Sample.Station.Label,
+         lon = Longitude..DD.,
+         lat = Latitude..DD.) %>%
+  filter(!is.na(lat))
+
+# ── 3. SVG pie helper ─────────────────────────────────────────────────────────
+make_pie_svg <- function(values, colors, size = 70) {
+  total <- sum(values)
+  if (total == 0) return(NULL)
+  fracs  <- values / total
+  angles <- cumsum(c(0, fracs)) * 2 * pi
+  r <- size / 2 - 2
+  slices <- purrr::map2_chr(seq_along(values), colors, function(i, col) {
+    a0 <- angles[i]; a1 <- angles[i + 1]
+    if (abs(a1 - a0) >= 2 * pi - 1e-6) {
+      sprintf('<circle cx="%s" cy="%s" r="%s" fill="%s"/>',
+              size/2, size/2, r, col)
+    } else {
+      x0 <- size/2 + r*sin(a0); y0 <- size/2 - r*cos(a0)
+      x1 <- size/2 + r*sin(a1); y1 <- size/2 - r*cos(a1)
+      large <- if ((a1 - a0) > pi) 1L else 0L
+      sprintf('<path d="M %s %s L %s %s A %s %s 0 %s 1 %s %s Z" fill="%s" stroke="white" stroke-width="1"/>',
+              size/2, size/2, x0, y0, r, r, large, x1, y1, col)
+    }
+  })
+  svg <- sprintf('<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s">%s</svg>',
+                 size, size, paste(slices, collapse = ""))
+  paste0("data:image/svg+xml;base64,", base64enc::base64encode(charToRaw(svg)))
+}
+
+# ── 4. Colour palette ─────────────────────────────────────────────────────────
+sp_colors <- c(
+  "EPFU" = "#F28E2B",
+  "LANO" = "#E15759",
+  "MYEV" = "#4E79A7",
+  "MYLU" = "#59A14F",
+  "MYVO" = "#9B59B6",
+  "MYYU" = "#76B7B2",
+  "PAHE" = "#EDC948",
+  "Other" = "#AAAAAA"
+)
+
+# ── 5. Helper: build one HTML table body ──────────────────────────────────────
+make_sp_table <- function(sp_df, pie_colors) {
+  sp_df %>%
+    arrange(desc(n)) %>%
+    mutate(pct = round(n / sum(n) * 100, 1)) %>%
+    purrr::pmap_chr(function(species, n, pct) sprintf(
+      '<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:50%%;background:%s;margin-right:4px"></span>%s</td><td align="right">%s</td><td align="right">%s%%</td></tr>',
+      ifelse(species %in% names(pie_colors), pie_colors[species], "#AAAAAA"),
+      species, n, pct
+    )) %>%
+    paste(collapse = "")
+}
+
+# ── 6. Build site list ────────────────────────────────────────────────────────
+site_list <- map_data %>%
+  group_by(site_name, lat, lon) %>%
+  summarise(
+    sp_data = list(tibble(species_pie, species_table, n, year)),
+    total   = sum(n),
+    years   = list(sort(unique(year))),
+    .groups = "drop"
+  )
+
+# ── 7. Draw map ───────────────────────────────────────────────────────────────
+m_ok <- leaflet() %>%
+  addProviderTiles(providers$CartoDB.Positron)
+
+all_pie_colors <- c()
+
+for (i in seq_len(nrow(site_list))) {
+  row   <- site_list[i, ]
+  sp    <- row$sp_data[[1]]
+  years <- row$years[[1]]
+
+  if (nrow(sp) == 0 || sum(sp$n) == 0) next
+
+  # -- Pie chart: uses species_pie (Other-collapsed), all years ----------------
+  sp_pie_all <- sp %>%
+    group_by(species_pie) %>%
+    summarise(n = sum(n), .groups = "drop") %>%
+    arrange(desc(n)) %>%
+    rename(species = species_pie)
+
+  top5 <- sp_pie_all$species[1:min(5, nrow(sp_pie_all))]
+
+  sp_pie <- sp_pie_all %>%
+    mutate(species = if_else(species %in% top5, species, "Other")) %>%
+    group_by(species) %>%
+    summarise(n = sum(n), .groups = "drop") %>%
+    arrange(desc(n))
+
+  unknown_sp    <- setdiff(sp_pie$species, names(sp_colors))
+  fallback_cols <- setNames(
+    colorRampPalette(RColorBrewer::brewer.pal(8, "Dark2"))(max(length(unknown_sp), 1)),
+    unknown_sp)
+  pie_colors <- setNames(c(sp_colors, fallback_cols)[sp_pie$species], sp_pie$species)
+
+  # -- Table colours: based on raw species codes (no Other collapsing) ---------
+  all_sp       <- unique(sp$species_table)
+  unknown_all  <- setdiff(all_sp, names(sp_colors))
+  fallback_all <- setNames(
+    colorRampPalette(RColorBrewer::brewer.pal(8, "Dark2"))(max(length(unknown_all), 1)),
+    unknown_all)
+  all_colors <- c(sp_colors, fallback_all)
+
+  all_pie_colors <- c(all_pie_colors, pie_colors)
+
+  uri <- make_pie_svg(sp_pie$n, pie_colors[sp_pie$species])
+
+  uid <- gsub("[^a-zA-Z0-9]", "_", row$site_name)
+
+  # -- All-years table: raw species codes --------------------------------------
+  sp_all_table <- sp %>%
+    group_by(species_table) %>%
+    summarise(n = sum(n), .groups = "drop") %>%
+    rename(species = species_table)
+
+  all_table_html <- paste0(
+    '<tr><th align="left">Species</th><th align="right">n</th><th align="right">%%</th></tr>',
+    make_sp_table(sp_all_table, all_colors)
+  )
+
+  # -- Tab buttons + per-year tables -------------------------------------------
+  year_button_list <- c(
+    sprintf(
+      '<button onclick="(function(b){var uid=\'%s\';var rows=b.getAttribute(\'data-rows\');var tot=b.getAttribute(\'data-tot\');document.getElementById(\'tbl_\'+uid).innerHTML=rows;document.getElementById(\'lbl_\'+uid).innerHTML=\'All years &mdash; \'+tot+\' detections\';[].forEach.call(document.querySelectorAll(\'[data-uid%s]\'),function(x){x.style.background=\'#e0e0e0\';x.style.color=\'#333\'});b.style.background=\'#4E79A7\';b.style.color=\'white\';})(this)" data-uid%s="1" data-tot="%s" data-rows="%s" id="btn_%s_all" style="margin:2px;padding:3px 8px;border:1px solid #ccc;border-radius:4px;background:#4E79A7;color:white;cursor:pointer;font-size:11px;">All</button>',
+      uid, uid, uid, row$total,
+      htmltools::htmlEscape(all_table_html, attribute = TRUE),
+      uid
+    ),
+    purrr::map_chr(years, function(yr) {
+      sp_yr <- sp %>%
+        filter(year == yr) %>%
+        group_by(species_table) %>%
+        summarise(n = sum(n), .groups = "drop") %>%
+        rename(species = species_table)
+      yr_total <- sum(sp_yr$n)
+      yr_table_html <- paste0(
+        '<tr><th align="left">Species</th><th align="right">n</th><th align="right">%%</th></tr>',
+        make_sp_table(sp_yr, all_colors)
+      )
+      sprintf(
+        '<button onclick="(function(b){var uid=\'%s\';var rows=b.getAttribute(\'data-rows\');var tot=b.getAttribute(\'data-tot\');var yr=b.getAttribute(\'data-yr\');document.getElementById(\'tbl_\'+uid).innerHTML=rows;document.getElementById(\'lbl_\'+uid).innerHTML=yr+\' &mdash; \'+tot+\' detections\';[].forEach.call(document.querySelectorAll(\'[data-uid%s]\'),function(x){x.style.background=\'#e0e0e0\';x.style.color=\'#333\'});b.style.background=\'#4E79A7\';b.style.color=\'white\';})(this)" data-uid%s="1" data-yr="%s" data-tot="%s" data-rows="%s" id="btn_%s_%s" style="margin:2px;padding:3px 8px;border:1px solid #ccc;border-radius:4px;background:#e0e0e0;color:#333;cursor:pointer;font-size:11px;">%s</button>',
+        uid, uid, uid, yr, yr_total,
+        htmltools::htmlEscape(yr_table_html, attribute = TRUE),
+        uid, yr, yr
+      )
+    })
+  ) %>% paste(collapse = "")
+
+  # -- Full popup --------------------------------------------------------------
+  popup <- sprintf(
+    '<div style="font-family:sans-serif;min-width:220px;max-width:280px">
+  <b>%s</b>
+  <hr style="margin:5px 0"/>
+  <div style="margin-bottom:6px">%s</div>
+  <b id="lbl_%s">All years &mdash; %s detections</b>
+  <table id="tbl_%s" style="width:100%%;margin-top:4px">%s</table>
+</div>',
+    row$site_name,
+    year_button_list,
+    uid, row$total,
+    uid,
+    all_table_html
+  )
+
+  m_ok <- m_ok %>% addMarkers(
+    lng   = row$lon, lat = row$lat,
+    icon  = makeIcon(iconUrl = uri, iconWidth = 70, iconHeight = 70,
+                     iconAnchorX = 35, iconAnchorY = 35),
+    popup = popup,
+    label = row$site_name
+  )
+} # closes for loop
+
+# ── 8. Legend ─────────────────────────────────────────────────────────────────
+legend_colors <- all_pie_colors[!duplicated(names(all_pie_colors))]
+legend_colors <- legend_colors[order(names(legend_colors))]
+if ("Other" %in% names(legend_colors)) {
+  legend_colors <- c(legend_colors[names(legend_colors) != "Other"],
+                     legend_colors["Other"])
+}
+
+legend_html <- htmltools::tags$div(
+  style = "background:white;padding:10px 14px;border-radius:6px;box-shadow:0 1px 5px rgba(0,0,0,.3);font-family:sans-serif;font-size:12px;max-height:300px;overflow-y:auto;",
+  htmltools::tags$b("Species"),
+  htmltools::tags$hr(style = "margin:4px 0"),
+  htmltools::HTML(paste(purrr::map_chr(names(legend_colors), ~sprintf(
+    '<div style="display:flex;align-items:center;margin-bottom:3px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%%;background:%s;margin-right:6px"></span>%s</div>',
+    legend_colors[.x], .x)), collapse = ""))
+)
+
+m_ok <- m_ok %>% addControl(legend_html, position = "bottomright")
+
+```
+
+# Executive Summary
+
+# Land Acknowledgement
+
+Biodiversity Pathways respectfully acknowledges that our work takes place on Treaty 8 and Douglas Treaties Territories as well as the traditional and unceded territories of First Nations and Métis Peoples across all regions of British Columbia, whose histories, languages, and cultures are deeply connected to the biodiversity we monitor. We acknowledge the traditional teachings of the lands that we work on, and that reciprocal, meaningful, and respectful relationships with Indigenous peoples make our work possible. We are deeply grateful for their stewardship of these lands, and we are committed to supporting Indigenous-led monitoring programs, while learning Indigenous ways of knowing, being, and doing.
+
+# Introduction
+
+# Methodology
+
+# Results
+
+```{r}
+#| echo: false
+#| eval: true
+#| warning: false
+#| message: false
+#| include: true
+#| fig-cap: Proportion of species bat passes at each site. Other represents tags that were identified as species couplets or species groups
+#| label: fig-monitoring-locations
+
+if (knitr::is_html_output()) {
+  m_ok
+} else {
+  dir.create(file.path(getwd(), "Figures"), showWarnings = FALSE)
+  
+  map_file <- file.path(getwd(), "Figures", "survey_map.png")
+  
+  tryCatch({
+    mapview::mapshot2(
+      m_ok,
+      file = map_file,
+      delay = 5,
+      vwidth = 1200,
+      vheight = 800
+    )
+  }, error = function(e) {
+    message("mapshot2 failed: ", e$message)
+  })
+  
+  knitr::include_graphics(map_file)
+}
+```
+
+# Discussion

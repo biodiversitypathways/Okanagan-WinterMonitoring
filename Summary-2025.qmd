@@ -1,5 +1,5 @@
 ---
-title: South Okanagan Bat Hibernacula Project
+title: South Okanagan Bat Hibernacula Project 2019-2025
 subtitle: 2025-26 Update
 resources:
   - Logos/
@@ -25,7 +25,6 @@ format:
       - margin=1in
     papersize: letter
     extra_dependencies: ["float"]
-    title-graphic: "Images/photos-20250609-193136.jpg"
     include-before-body:
       text: |
         \clearpage
@@ -35,10 +34,10 @@ format:
         \usepackage{float}
 date: last-modified
 author: 
+  - name: "Mandy Kellner"
+    affiliation: "Ministry of Water, Land and Resource Stewardship, British Columbia"
   - name: "Camila Hurtado"
     affiliation: "Biodiversity Pathways"
-  - name: "Mandy Kellner"
-    affiliation: "Ministry of Water, Land and Resource Stewardship, British Columbia "
 editor: visual
 bibliography: NABat-NNWHub-references.bib
 nocite: '@*'
@@ -65,6 +64,58 @@ library(sf)
 
 OK <- read.csv("Data/merged.locations.csv")
 
+#get values for results summary
+# Extract year from Detection.Date
+OK <- OK %>%
+  mutate(Year = year(as.Date(Detection.Date)))
+
+# --- Most recordings: site x year combo ---
+site_year_counts <- OK %>%
+  group_by(Sample.Station.Label, Year) %>%
+  summarise(n_recordings = n(), .groups = "drop")
+
+top_site_year <- site_year_counts %>%
+  slice_max(n_recordings, n = 1, with_ties = FALSE)
+
+top_site      <- top_site_year$Sample.Station.Label
+top_site_yr   <- top_site_year$Year
+top_site_n    <- top_site_year$n_recordings
+
+# --- Most sites sampled: which year had the most unique sites ---
+sites_per_year <- OK %>%
+  group_by(Year) %>%
+  summarise(n_sites = n_distinct(Sample.Station.Label), .groups = "drop")
+
+top_sampled_yr     <- sites_per_year %>% slice_max(n_sites, n = 1, with_ties = FALSE)
+top_sampled_year   <- top_sampled_yr$Year
+top_sampled_nsites <- top_sampled_yr$n_sites
+
+# ------------------------- Species summaries ------------------------
+# Codes to exclude
+exclude_codes <- c("NOISE", "NoID", "HIF", "LOF", "HILO")
+
+spp_clean <- OK %>%
+  filter(
+    !Species.Code %in% exclude_codes,
+    !is.na(Species.Code),
+    Species.Code != ""
+  )
+
+# Most common species (by number of detections)
+spp_counts <- spp_clean %>%
+  group_by(Species.Code) %>%
+  summarise(n = n(), .groups = "drop")
+
+top_spp   <- spp_counts %>% slice_max(n, n = 1, with_ties = FALSE)
+top_spp_code <- top_spp$Species.Code
+top_spp_n    <- top_spp$n
+
+# Total confirmed species: exactly 4 characters, after exclusions
+confirmed_spp <- spp_clean %>%
+  filter(nchar(as.character(Species.Code)) == 4) %>%
+  distinct(Species.Code)
+
+n_confirmed <- nrow(confirmed_spp)
 ```
 
 ```{r}
@@ -252,18 +303,26 @@ for (i in seq_len(nrow(site_list))) {
   ) %>% paste(collapse = "")
 
   # -- Full popup --------------------------------------------------------------
+ n_species <- nrow(sp_all_table)
+  table_style <- if (n_species > 15) {
+    'style="width:100%;margin-top:4px;display:block;max-height:250px;overflow-y:auto;"'
+  } else {
+    'style="width:100%;margin-top:4px;"'
+  }
+
   popup <- sprintf(
     '<div style="font-family:sans-serif;min-width:220px;max-width:280px">
   <b>%s</b>
   <hr style="margin:5px 0"/>
   <div style="margin-bottom:6px">%s</div>
   <b id="lbl_%s">All years &mdash; %s detections</b>
-  <table id="tbl_%s" style="width:100%%;margin-top:4px">%s</table>
+  <table id="tbl_%s" %s>%s</table>
 </div>',
     row$site_name,
     year_button_list,
     uid, row$total,
     uid,
+    table_style,
     all_table_html
   )
 
@@ -297,7 +356,7 @@ m_ok <- m_ok %>% addControl(legend_html, position = "bottomright")
 
 ```
 
-# Executive Summary
+{{< pagebreak >}}
 
 # Land Acknowledgement
 
@@ -315,19 +374,17 @@ In the Okanagan region, multi-year acoustic monitoring by BC Parks (Paterson 202
 
 Understanding the winter habitat use and ecology of bats can contribute to management decisions around recreational and industrial activities. Understanding how bats use non-cave features, including rock crevices, talus, and trees, for hibernating will also contribute to our understanding of ‎*Pseudogymnoascus destructans* (fungus causing white-nose syndrome in bats) transmission in BC and influence treatment options.
 
-Work occurred in the South Okanagan in 2024/25 (Skurihina and Kellner 2025 to assess the feasibility of fall/winter bat capture and tracking in south Okanagan parks and protected areas and, if successful, to identify microsites used by tagged bats through radiotelemetry. Specifically, this pilot project aimed to
+Winter acoustic sampling has occured in the South Okanagan starting in the 2019 until winter 2026 with the purpose of identifying potential locations for winter hibernacula. The multi-year acoustic monitoring confirmed winter bat activity, which has been interpreted as indicative of hibernacula in the immediate area. However, our field surveys suggested that bats might be flying rapidly through the area, using the site as a flight corridor. Calls recorded on the multi-year detector may, therefore, not be as indicative of immediate, local hibernation as was first believed. Because of these results in 2024/25, the team decided to consider an alternative approach to indentifying netting sites.
 
-1.   Assess the ability to capture bats in late fall/early winter in the south Okanagan, particularly Skaha Park and Haynes Lease Ecological Reserve,
+In 2024/25 work occured at Doctor’s Wall as a capture site to identify local hibernacula microhabitats. This work was led by Skurihina and Kellner, to assess the feasibility of fall/winter bat capture and tracking in South Okanagan parks and protected areas and, to identify microsites used by tagged bats through radiotelemetry. Specifically, this pilot project aimed to
+
+1.  Assess the ability to capture bats in late fall/early winter in the south Okanagan, particularly Skaha Park and Haynes Lease Ecological Reserve,
 
 2.  begin to identify microsites used by bats in late fall/winter, and
 
 3.  test the assumption made in acoustic monitoring that late fall/early winter detections are indicative of bats hibernating in the vicinity – relocation via telemetry would confirm the use of the immediate area.
 
-Efforts originally focused on Doctor’s Wall as a capture site to identify local hibernacula microhabitats. This site is the location of multi-year acoustic monitoring with confirmed winter bat activity, which has been interpreted as indicative of hibernacula in the immediate area. However, our field surveys suggested that bats might be flying rapidly through the area, using the site as a flight corridor. Calls recorded on the multi-year detector may, therefore, not be as indicative of immediate, local hibernation as was first believed. Because of these results in 2024/25, the team decided to consider an alternative approach to indeitfying netting sites.
-
-In 2025/26, we planned to deploy additional bat detectors throughout Skaha Bluff Park to gather additional information on bat movement.
-
-We also invested in data capture and sharing, with submission of all acoustic data from long-term monitoring sites to the North American Bat Monitoring Program database and to WildTrax. This will allow….. contribution to additional larger scale analyses, and storage and re-analysis of acoustic files in future if needed
+We also invested in data capture and sharing, with submission of all acoustic data from long-term monitoring sites to the North American Bat Monitoring Program database and to WildTrax. This will allow contribution to additional larger scale analyses, and storage and re-analysis of acoustic files in future if needed
 
 Finally, we invested in developing a data visualization tool that future results can be added into. While initially simple, this tool should be easy to enhance to make it a useful interactive tool to examine patterns in winter bat detections in Okanagan Parks and Protected Areas.
 
@@ -341,6 +398,14 @@ Acoustic results were analyzed using Kaleidoscope Pro (Wildlife Acoustics, versi
 
 # Results
 
+Acoustic sampling has been on going for a total of 7 years, sampling a total of `r length(unique(OK$Sample.Station.Label))` unique sites. Across all survey years, `r top_site` had the highest number of recordings in a single year (`r top_site_yr`), with a total of `r formatC(top_site_n, format = "d", big.mark = ",")` detections. The greatest sampling effort in terms of site coverage occurred in `r top_sampled_year`, during which `r top_sampled_nsites` unique sites were monitored.
+
+In total there have been `r nrow(OK)` bat recordings recorded over the length of the study. A total of `r n_confirmed` bat species were confirmed across all sites and years. The most frequently recorded species was `r top_spp_code`, with `r formatC(top_spp_n, format = "d", big.mark = ",")` detections.
+
+::: {.content-visible when-format="html"}
+## Interactive Map
+:::
+
 ```{r}
 #| echo: false
 #| eval: true
@@ -352,25 +417,44 @@ Acoustic results were analyzed using Kaleidoscope Pro (Wildlife Acoustics, versi
 
 if (knitr::is_html_output()) {
   m_ok
-} else {
+}else {
   dir.create(file.path(getwd(), "Figures"), showWarnings = FALSE)
-  
   map_file <- file.path(getwd(), "Figures", "survey_map.png")
-  
+
+  # Attach legend for the static screenshot
+  m_pdf <- m_ok %>%
+    addControl(legend_html, position = "bottomright")
+
   tryCatch({
     mapview::mapshot2(
-      m_ok,
+      m_pdf,
       file = map_file,
       delay = 5,
-      vwidth = 1200,
-      vheight = 800
+      vwidth  = 900,
+      vheight = 1100
     )
   }, error = function(e) {
     message("mapshot2 failed: ", e$message)
   })
-  
+
   knitr::include_graphics(map_file)
 }
 ```
 
 # Discussion
+
+There are several underground cave/talus-cave systems known to BC Parks. Assessment of bat use, species presence, and timing of use could be accomplished through acoustic monitoring and/or guano collection. One such area is at Doctor’s wall; during this survey, nets were set up near the entrances of identified caves, but no bats were detected during emergence or caught in the nets. One of the project partners set up an experimental acoustic detector inside the larger cave on November 12, 2024. As of March 2025, this detector had not been retrieved. Options for future work include additional placement of bat detectors at openings or inside caves, single-species DNA analysis through collection of single pellets of guano in paper envelopes (Wildlife Genetics International), and/or multi-species DNA analysis through collection of multiple guano samples (Northern Arizona University Species from Feces lab).
+
+## Recommendations
+
+1.  Explore use of detector array to increase understanding of bat winter movements and potential travel corridors as well as inform capture efforts.
+2.  Target Gilles Creek and the Spring for additional monitoring and capture work as the area currently believed to offer the best chance of successful captures.
+3.  Increase understanding of bat use of cave/talus features that are known or suspected to be used by bats, through passive acoustic monitoring and guano collection to determine timing of use and species.
+
+# Acknowledgements
+
+This work was supported by funding from the BC Parks License Plate Program, as well as in-kind staff time, vehicles, and equipment from BC Parks and WLRS.
+
+{{< pagebreak >}}
+
+# Literature Cited

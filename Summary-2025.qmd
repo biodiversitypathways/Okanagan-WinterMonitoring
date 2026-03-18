@@ -15,7 +15,6 @@ format:
     toc-expand: true
     toc-location: left
     css: styles.css
-    embed-resources: true
   pdf:
     tbl-pos: "H"
     toc: true

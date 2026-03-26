@@ -59,9 +59,29 @@ library(leaflet)
 library(base64enc)
 library(mapview)
 library(sf)
+library(gt)
 
 OK <- read.csv("Data/merged.locations.csv")
-
+sites <- read.csv("Data/Sites.csv")|>   # update path as needed
+  # Rename columns to something workable
+  rename(
+    park      = Park...Protected.Area,
+    site      = Site,
+    lat       = Latitude,
+    lon       = Longitude,
+    y1819     = Years.monitored,  # 2018-19
+    y1920     = X,                # 2019-20
+    y2021     = X.1,              # 2020-21
+    y2122     = X.2,              # 2021-22
+    y2223     = X.3,              # 2022-23
+    y2425     = X.4,              # 2024-25
+    data_type = Data.type,
+    source    = Project.report.data.source..BC.WSI.project.ID.6430.
+  ) |>
+  filter(site !="") |> # drop the header-artifact row (row 1 in your CSV)
+  mutate(
+  lat = formatC(lat, format = "f", digits = 4),
+  lon = formatC(lon, format = "f", digits = 4))
 #get values for results summary
 # Extract year from Detection.Date
 OK <- OK %>%
@@ -354,6 +374,79 @@ m_ok <- m_ok %>% addControl(legend_html, position = "bottomright")
 
 ```
 
+```{r}
+#| label: Set up sites table
+#| include: false
+#| echo: false
+#| eval: true
+#| warning: false
+#| message: false
+
+tbl <-sites|> 
+  mutate(
+    park = factor(park, levels = c(
+      "Tplaqin / Enderby Cliffs Park",
+      "Kalamalka Lake park",
+      "Okanagan Mountain Park",
+      "Haynes Lease Ecological Reserve",
+      "Skaha Bluffs Park"
+    )),
+    site = factor(site, levels = c(
+      unique(site[!site %in% c("Gillies Creek Road Detector", 
+                                "Gillies Creek Open Forest Detector", 
+                                "Smythe Drive Spring Detector")]),
+      "Gillies Creek Road Detector",
+      "Gillies Creek Open Forest Detector",
+      "Smythe Drive Spring Detector"
+    ))
+  ) |>
+  arrange(park, site) |> 
+    gt(groupname_col = "park") |>
+  cols_label(
+    site      = "Site",
+    lat       = "Latitude",
+    lon       = "Longitude",
+    y1819     = "2018-19",
+    y1920     = "2019-20",
+    y2021     = "2020-21",
+    y2122     = "2021-22",
+    y2223     = "2022-23",
+    y2425     = "2024-25",
+    data_type = "Data type",
+    source    = html("Project report/data source<br>(BC WSI project ID 6430)")
+  ) |>
+  tab_spanner(label = "Years monitored",
+              columns = c(y1819, y1920, y2021, y2122, y2223, y2425)) |>
+  cols_align(align = "center",
+             columns = c(y1819, y1920, y2021, y2122, y2223, y2425, data_type)) |>
+  cols_align(align = "left",  columns = c(site, source)) |>
+  cols_align(align = "right", columns = c(lat, lon)) |>
+  tab_style(
+    style = list(cell_fill(color = "#D5E8F0"), cell_text(weight = "bold")),
+    locations = cells_row_groups()
+  ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = list(cells_column_spanners(), cells_column_labels())
+  ) |>
+  tab_options(
+    table.font.size               = px(11),
+    data_row.padding              = px(3),
+    row_group.padding             = px(4),
+    table.border.top.style        = "solid",
+    table.border.bottom.style     = "solid",
+    column_labels.border.bottom.style = "solid"
+  ) |>
+  tab_footnote(
+    footnote = "Paterson. 2024. Okanagan winter bat monitoring: 5 year summary 2018-2023. Prepared for Kirk Safford, BC Parks.",
+    locations = cells_body(columns = source, rows = source == "Paterson 2024")
+  ) |>
+  tab_footnote(
+    footnote = "Skurikhina and Kellner. 2025. South Okanagan Bat Hibernacula Microsite Pilot Project. 2024-25 field update.",
+    locations = cells_body(columns = source, rows = source == "Skurikhina and Kellner 2025")
+  )
+```
+
 {{< pagebreak >}}
 
 # Land Acknowledgement
@@ -382,7 +475,9 @@ In 2024/25 work occured at Doctor’s Wall as a capture site to identify local h
 
 3.  test the assumption made in acoustic monitoring that late fall/early winter detections are indicative of bats hibernating in the vicinity – relocation via telemetry would confirm the use of the immediate area.
 
-We also invested in data capture and sharing, with submission of all acoustic data from long-term monitoring sites to the North American Bat Monitoring Program database and to WildTrax. This will allow contribution to additional larger scale analyses, and storage and re-analysis of acoustic files in future if needed
+In 20256/26, we also invested in data capture and sharing, with submission of all acoustic data from long-term monitoring sites to the North American Bat Monitoring Program database and to WildTrax.This will allow contribution to additional larger scale analyses, and storage and re-analysis of acoustic files in future if needed.
+
+Acoustic data from short-term monitoring sites was not submitted to databases. This data and the longer-term monitoring dataset was submitted to BC Wildlife Species Inventory database.
 
 Finally, we invested in developing a data visualization tool that future results can be added into. While initially simple, this tool should be easy to enhance to make it a useful interactive tool to examine patterns in winter bat detections in Okanagan Parks and Protected Areas.
 
@@ -390,9 +485,21 @@ Finally, we invested in developing a data visualization tool that future results
 
 ## Acoustic Monitoring
 
-Passive acoustic monitoring was conducted using Wildlife Acoustic Song Meter MiniBat units, placed out for one to multiple nights, to confirm bat presence and aid in selecting suitable netting microsites. Occasional active monitoring was done during mist-netting, using a handheld Wildlife Acoustic Echometer Touch Pro to monitor bat activity at each capture site. Monitoring effort was not recorded for active monitoring.  
+Passive acoustic monitoring was conducted using Wildlife Acoustic Song Meter MiniBat units, placed out for one to multiple nights, to confirm bat presence and aid in selecting suitable netting microsites. Occasional active monitoring was done during mist-netting, using a handheld Wildlife Acoustic Echometer Touch Pro to monitor bat activity at each capture site. Monitoring effort was not recorded for active monitoring (@tbl-sites).  
 
-Acoustic results were analyzed using Kaleidoscope Pro (Wildlife Acoustics, version 5.6.8) with bat auto ID Bats of North America 5.8.1 modified for the region. The species list included Pallid Bats (*Antrozous pallidus*, ANPA), Townsend’s Big-eared Bat (*Corynorhinus townsendii*, COTO), Big Brown Bat (*Eptesicus fuscus*, EPFU), Hoary Bat (*Lasiurus cinereus*, LACI), Silver-haired Bat (*Lasionycteris noctivagans*, LANO), Californian Myotis (*Myotis californicus*, MYCA), Western small-footed Myotis (*M. ciliolabrum*, MYCI), Long-eared Myotis (*M. evotis*, MYEV), Little Brown Myotis (*M. lucifugus*, MYLU), Fringed Myotis (*M. thysanodes*, MYTH), Long-legged Myotis (*M. volans*, MYVO), and Yuma Myotis (*M. yumanensis*, MYYU). All files were manually reviewed by Mandy Kellner and Brian Paterson.
+```{r}
+#| echo: false
+#| eval: true
+#| warning: false
+#| message: false
+#| include: true
+#| tbl-cap: "Parks/ Protected Areas, winter acoustic monitoring sites, and years monitored. LT = Long-term monitoring (duration of months); ST = short-term monitoring (duration of days to weeks)." 
+#| label: tbl-sites
+
+tbl
+```
+
+Acoustic results were analyzed using Kaleidoscope Pro (Wildlife Acoustics, version 5.6.8) with bat auto ID Bats of North America 5.8.1 modified for the region. The species list included Pallid Bats (*Antrozous pallidus*, ANPA), Townsend’s Big-eared Bat (*Corynorhinus townsendii*, COTO), Big Brown Bat (*Eptesicus fuscus*, EPFU), Hoary Bat (*Lasiurus cinereus*, LACI), Silver-haired Bat (*Lasionycteris noctivagans*, LANO), Californian Myotis (*Myotis californicus*, MYCA), Western small-footed Myotis (*M. ciliolabrum*, MYCI), Long-eared Myotis (*M. evotis*, MYEV), Little Brown Myotis (*M. lucifugus*, MYLU), Fringed Myotis (*M. thysanodes*, MYTH), Long-legged Myotis (*M. volans*, MYVO), and Yuma Myotis (*M. yumanensis*, MYYU). All files were manually reviewed by Brian Paterson and Mandy Kellner.
 
 # Results
 
@@ -439,6 +546,10 @@ if (knitr::pandoc_to("html")){
 }
 ```
 
+## Data Submission
+
+The longterm acoustic monitoring data set has been formatted and submitted to BC Wildlife Species Inventory under project 6430 - South Okanagan Bat Hibernacula Project. Data has been also been submitted to NABat and can be viewed in the [Partner Portal](https://sciencebase.usgs.gov/nabat/#/explore)) under project: South Okanagan Bat Winter Bat Project (Project ID:16855). Analyzed acoustic files have been submitted to [WildTrax](https://wildtrax.ca/) and are available can be found under the project: South Okanagan Bat Winter Bat. Access to data sources will require permission from Mandy Kellner, and can be requested directly through the portals.
+
 # Discussion
 
 There are several underground cave/talus-cave systems known to BC Parks. Assessment of bat use, species presence, and timing of use could be accomplished through acoustic monitoring and/or guano collection. One such area is at Doctor’s wall; during this survey, nets were set up near the entrances of identified caves, but no bats were detected during emergence or caught in the nets. One of the project partners set up an experimental acoustic detector inside the larger cave on November 12, 2024. As of March 2025, this detector had not been retrieved. Options for future work include additional placement of bat detectors at openings or inside caves, single-species DNA analysis through collection of single pellets of guano in paper envelopes (Wildlife Genetics International), and/or multi-species DNA analysis through collection of multiple guano samples (Northern Arizona University Species from Feces lab).
@@ -448,10 +559,13 @@ There are several underground cave/talus-cave systems known to BC Parks. Assessm
 1.  Explore use of detector array to increase understanding of bat winter movements and potential travel corridors as well as inform capture efforts.
 2.  Target Gilles Creek and the Spring for additional monitoring and capture work as the area currently believed to offer the best chance of successful captures.
 3.  Increase understanding of bat use of cave/talus features that are known or suspected to be used by bats, through passive acoustic monitoring and guano collection to determine timing of use and species.
+4.  Expand collection of existing data. This project aims to identify and include additional acoustic datasets. Possible sources including data from 2025/26 Skaha Park winter monitoring (Kellner pers comm), Sarrell 2012 Skaha winter monitoring, and ECCC/CWS year-round monitoring at Vaseaux (T. Luszcz pers comm)
 
 # Acknowledgements
 
 This work was supported by funding from the BC Parks License Plate Program, as well as in-kind staff time, vehicles, and equipment from BC Parks and WLRS.
+
+Data included in this compilation and summary was from work done for BC Parks by Brian Paterson and BC Water, Land and Resource Stewardship. Reports and summarized data are available on the BC Wildlife Species Inventory website.
 
 {{< pagebreak >}}
 

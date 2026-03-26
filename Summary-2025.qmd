@@ -30,6 +30,7 @@ format:
       text: |
         \usepackage{placeins}
         \usepackage{float}
+        \floatplacement{table}{H}
 date: last-modified
 author: 
   - name: "Mandy Kellner"
@@ -430,12 +431,26 @@ tbl <-sites|>
     locations = list(cells_column_spanners(), cells_column_labels())
   ) |>
   tab_options(
-    table.font.size               = px(11),
-    data_row.padding              = px(3),
-    row_group.padding             = px(4),
+    table.font.size               = px(10),      # smaller for PDF
+    data_row.padding              = px(2),
+    row_group.padding             = px(3),
     table.border.top.style        = "solid",
     table.border.bottom.style     = "solid",
-    column_labels.border.bottom.style = "solid"
+    column_labels.border.bottom.style = "solid",
+    table.width                   = pct(100)     # stretch to full text width
+  ) |>
+  cols_width(
+    site      ~ px(130),
+    lat       ~ px(67),
+    lon       ~ px(67),
+    y1819     ~ px(36),
+    y1920     ~ px(36),
+    y2021     ~ px(36),
+    y2122     ~ px(36),
+    y2223     ~ px(36),
+    y2425     ~ px(36),
+    data_type ~ px(32),
+    source    ~ px(90)
   ) |>
   tab_footnote(
     footnote = "Paterson. 2024. Okanagan winter bat monitoring: 5 year summary 2018-2023. Prepared for Kirk Safford, BC Parks.",
@@ -495,6 +510,7 @@ Passive acoustic monitoring was conducted using Wildlife Acoustic Song Meter Min
 #| include: true
 #| tbl-cap: "Parks/ Protected Areas, winter acoustic monitoring sites, and years monitored. LT = Long-term monitoring (duration of months); ST = short-term monitoring (duration of days to weeks)." 
 #| label: tbl-sites
+#| tbl-pos: "H"
 
 tbl
 ```
@@ -548,7 +564,7 @@ if (knitr::pandoc_to("html")){
 
 ## Data Submission
 
-The longterm acoustic monitoring data set has been formatted and submitted to BC Wildlife Species Inventory under project 6430 - South Okanagan Bat Hibernacula Project. Data has been also been submitted to NABat and can be viewed in the [Partner Portal](https://sciencebase.usgs.gov/nabat/#/explore)) under project: South Okanagan Bat Winter Bat Project (Project ID:16855). Analyzed acoustic files have been submitted to [WildTrax](https://wildtrax.ca/) and are available can be found under the project: South Okanagan Bat Winter Bat. Access to data sources will require permission from Mandy Kellner, and can be requested directly through the portals.
+The long term acoustic monitoring data set has been formatted and submitted to BC Wildlife Species Inventory under project 6430 - South Okanagan Bat Hibernacula Project. Data has been also been submitted to NABat and can be viewed in the [Partner Portal](https://sciencebase.usgs.gov/nabat/#/explore)) under project: South Okanagan Bat Winter Bat Project (Project ID:16855). Analyzed acoustic files have been submitted to [WildTrax](https://wildtrax.ca/) and are available can be found under the project: South Okanagan Bat Winter Bat. Access to data sources will require permission from Mandy Kellner, and can be requested directly through the portals.
 
 # Discussion
 
